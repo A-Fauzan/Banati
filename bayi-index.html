@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Tumbuh Kembang Bayi</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.js"></script>
+<script>
+tailwind.config={theme:{extend:{fontFamily:{serif:['DM Serif Display','serif'],sans:['DM Sans','sans-serif']},colors:{pink:{950:'#4a0020'},rose:{brand:'#e11d48'}},keyframes:{fadeUp:{from:{opacity:0,transform:'translateY(10px)'},to:{opacity:1,transform:'translateY(0)'}}},animation:{'fade-up':'fadeUp .25s ease both'}}}}
+</script>
+<style>
+html,body{height:100%;overflow:hidden;background:#fff7f7;font-family:'DM Sans',sans-serif}
+#app{max-width:480px;margin:0 auto;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.page{position:absolute;inset:0;overflow-y:auto;padding:16px 16px 88px;display:none}
+.page.active{display:block}
+::-webkit-scrollbar{width:2px}::-webkit-scrollbar-thumb{background:#fecdd3;border-radius:99px}
+input:focus,select:focus,textarea:focus{outline:none}
+@keyframes spin{to{transform:rotate(360deg)}}.spinner{animation:spin .7s linear infinite}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- HEADER -->
+  <div class="flex-shrink-0 bg-rose-600 px-5 py-3.5 relative overflow-hidden">
+    <div class="absolute -top-4 -right-4 w-20 h-20 rounded-full bg-white/10"></div>
+    <div class="flex items-center justify-between relative">
+      <div>
+        <div class="font-serif text-white text-lg">Tumbuh Kembang Bayi</div>
+        <div class="text-rose-200 text-xs mt-0.5">Shafiyyah & Athiyyah</div>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="setAnak('Shafiyyah')" id="tab-shafiyyah"
+          class="anak-tab px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-rose-600 transition-all">Shafiyyah</button>
+        <button onclick="setAnak('Athiyyah')" id="tab-athiyyah"
+          class="anak-tab px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/20 text-white transition-all">Athiyyah</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGES -->
+  <div id="pages" class="flex-1 overflow-hidden relative">
+
+    <!-- HOME -->
+    <div class="page active" id="page-home">
+      <!-- Stat Cards -->
+      <div id="stat-cards" class="grid grid-cols-3 gap-2 mb-5">
+        <div class="bg-white rounded-xl p-3 text-center border border-rose-100">
+          <div class="text-rose-400 flex justify-center mb-1"><i data-lucide="scale" class="w-4 h-4"></i></div>
+          <div id="stat-berat" class="font-semibold text-stone-800 text-sm">—</div>
+          <div class="text-stone-400 text-xs">Berat (kg)</div>
+        </div>
+        <div class="bg-white rounded-xl p-3 text-center border border-rose-100">
+          <div class="text-rose-400 flex justify-center mb-1"><i data-lucide="ruler" class="w-4 h-4"></i></div>
+          <div id="stat-tinggi" class="font-semibold text-stone-800 text-sm">—</div>
+          <div class="text-stone-400 text-xs">Tinggi (cm)</div>
+        </div>
+        <div class="bg-white rounded-xl p-3 text-center border border-rose-100">
+          <div class="text-rose-400 flex justify-center mb-1"><i data-lucide="circle" class="w-4 h-4"></i></div>
+          <div id="stat-lk" class="font-semibold text-stone-800 text-sm">—</div>
+          <div class="text-stone-400 text-xs">LK (cm)</div>
+        </div>
+      </div>
+
+      <!-- Chart Berat -->
+      <div class="bg-white rounded-2xl border border-rose-100 p-4 mb-3">
+        <div class="text-sm font-semibold text-stone-700 mb-3">Grafik Berat Badan (kg)</div>
+        <canvas id="chart-berat" height="160"></canvas>
+      </div>
+
+      <!-- Riwayat -->
+      <div class="flex items-center justify-between mb-3">
+        <div class="font-serif text-stone-800">Riwayat Pengukuran</div>
+        <span id="data-count" class="text-xs text-stone-400"></span>
+      </div>
+      <div id="data-list"><div class="flex flex-col items-center py-8 text-stone-300"><div class="w-6 h-6 border-2 border-stone-200 border-t-rose-400 rounded-full spinner mb-2"></div><span class="text-sm">Memuat...</span></div></div>
+    </div>
+
+    <!-- TAMBAH -->
+    <div class="page" id="page-add">
+      <div class="font-serif text-stone-800 text-xl mb-5">Catat Pengukuran</div>
+      <div id="add-toast" class="hidden rounded-xl px-4 py-3 mb-4 text-sm font-semibold text-white text-center"></div>
+
+      <div class="bg-rose-50 border border-rose-100 rounded-xl px-4 py-3 mb-5 text-sm text-rose-600 font-medium flex items-center gap-2">
+        <i data-lucide="baby" class="w-4 h-4 flex-shrink-0"></i>
+        Mencatat untuk: <span id="add-nama-label" class="font-bold">Shafiyyah</span>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="text-xs font-semibold text-stone-400 tracking-widest block mb-1.5">TANGGAL</label>
+          <input type="date" id="inp-tanggal" class="w-full bg-white border-2 border-stone-200 focus:border-rose-400 rounded-xl px-4 py-3 text-sm text-stone-700 transition-colors"/>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-stone-400 tracking-widest block mb-1.5">USIA (BULAN)</label>
+          <input type="number" id="inp-usia" placeholder="contoh: 3" class="w-full bg-white border-2 border-stone-200 focus:border-rose-400 rounded-xl px-4 py-3 text-sm text-stone-700 transition-colors"/>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="text-xs font-semibold text-stone-400 tracking-widest block mb-1.5">BERAT (kg)</label>
+            <input type="number" step="0.1" id="inp-berat" placeholder="5.2" class="w-full bg-white border-2 border-stone-200 focus:border-rose-400 rounded-xl px-4 py-3 text-sm text-stone-700 transition-colors"/>
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-stone-400 tracking-widest block mb-1.5">TINGGI (cm)</label>
+            <input type="number" step="0.1" id="inp-tinggi" placeholder="55" class="w-full bg-white border-2 border-stone-200 focus:border-rose-400 rounded-xl px-4 py-3 text-sm text-stone-700 transition-colors"/>
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-stone-400 tracking-widest block mb-1.5">LK (cm)</label>
+            <input type="number" step="0.1" id="inp-lk" placeholder="38" class="w-full bg-white border-2 border-stone-200 focus:border-rose-400 rounded-xl px-4 py-3 text-sm text-stone-700 transition-colors"/>
+          </div>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-stone-400 tracking-widest block mb-1.5">CATATAN</label>
+          <textarea id="inp-catatan" rows="2" placeholder="Misal: kunjungan posyandu, sehat, aktif..." class="w-full bg-white border-2 border-stone-200 focus:border-rose-400 rounded-xl px-4 py-3 text-sm text-stone-700 resize-none transition-colors"></textarea>
+        </div>
+      </div>
+      <button onclick="simpanData()" class="mt-5 w-full flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white rounded-xl py-4 text-base font-semibold shadow-lg shadow-rose-500/20 transition-all">
+        <i data-lucide="save" class="w-5 h-5"></i> Simpan Pengukuran
+      </button>
+    </div>
+
+    <!-- IMUNISASI -->
+    <div class="page" id="page-imun">
+      <div class="font-serif text-stone-800 text-xl mb-2">Jadwal Imunisasi</div>
+      <div class="text-stone-400 text-xs mb-5 flex items-center gap-1.5"><i data-lucide="baby" class="w-3.5 h-3.5"></i> <span id="imun-nama-label">Shafiyyah</span></div>
+      <div id="imun-progress" class="bg-white rounded-2xl border border-rose-100 p-4 mb-4">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm font-semibold text-stone-700">Progress</span>
+          <span id="imun-pct" class="text-sm font-bold text-rose-600">0/16</span>
+        </div>
+        <div class="h-2 bg-rose-100 rounded-full overflow-hidden">
+          <div id="imun-bar" class="h-full bg-rose-500 rounded-full transition-all" style="width:0%"></div>
+        </div>
+      </div>
+      <div id="imun-list"><div class="flex flex-col items-center py-8 text-stone-300"><div class="w-6 h-6 border-2 border-stone-200 border-t-rose-400 rounded-full spinner mb-2"></div><span class="text-sm">Memuat...</span></div></div>
+    </div>
+  </div>
+
+  <!-- TAB BAR -->
+  <div class="flex-shrink-0 bg-white/95 backdrop-blur border-t border-stone-100 flex" style="padding-bottom:env(safe-area-inset-bottom,0px)">
+    <button onclick="showTab('home')" class="tab-btn flex-1 flex flex-col items-center gap-1 py-3">
+      <i data-lucide="activity" class="w-5 h-5 text-stone-400 tab-icon"></i>
+      <span class="text-[10px] font-semibold text-stone-400 tab-label">Grafik</span>
+    </button>
+    <button onclick="showTab('add')" class="tab-btn flex-1 flex flex-col items-center gap-1 py-3">
+      <div class="w-9 h-9 -mt-6 rounded-full bg-rose-600 flex items-center justify-center shadow-lg shadow-rose-500/30">
+        <i data-lucide="plus" class="w-5 h-5 text-white"></i>
+      </div>
+      <span class="text-[10px] font-semibold text-stone-400 tab-label">Tambah</span>
+    </button>
+    <button onclick="showTab('imun')" class="tab-btn flex-1 flex flex-col items-center gap-1 py-3">
+      <i data-lucide="syringe" class="w-5 h-5 text-stone-400 tab-icon"></i>
+      <span class="text-[10px] font-semibold text-stone-400 tab-label">Imunisasi</span>
+    </button>
+  </div>
+</div>
+<div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl font-semibold text-sm text-white z-50 opacity-0 pointer-events-none transition-opacity whitespace-nowrap shadow-lg"></div>
+
+<script>
+const API_URL = "ISI_URL_APPS_SCRIPT_BAYI";
+const API_KEY = "bayi-fauzan-venska-rahasia";
+
+let curAnak = "Shafiyyah";
+let curTab  = "home";
+let dataAll = [];
+let imunAll = [];
+let chartBerat = null;
+
+const tod = () => new Date().toISOString().split('T')[0];
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const MS  = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
+
+async function apiCall(params) {
+  const qs  = new URLSearchParams({...params, key:API_KEY}).toString();
+  const res = await fetch(API_URL+'?'+qs, {redirect:'follow'});
+  const d   = await res.json();
+  if (d && d.error) throw new Error(d.error);
+  return d;
+}
+
+function ri() { setTimeout(()=>lucide.createIcons(),10); }
+
+function showToast(msg, ok=true) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.style.background = ok?'#047857':'#be123c';
+  el.style.opacity = '1'; setTimeout(()=>el.style.opacity='0', 2200);
+}
+function showAddToast(msg, ok=true) {
+  const el = document.getElementById('add-toast');
+  el.textContent=msg; el.style.background=ok?'#047857':'#be123c';
+  el.classList.remove('hidden'); setTimeout(()=>el.classList.add('hidden'),2500);
+}
+
+function setAnak(nama) {
+  curAnak = nama;
+  document.querySelectorAll('.anak-tab').forEach((b,i)=>{
+    const active = ['Shafiyyah','Athiyyah'][i]===nama;
+    b.className=`anak-tab px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${active?'bg-white text-rose-600':'bg-white/20 text-white'}`;
+  });
+  document.getElementById('add-nama-label').textContent = nama;
+  document.getElementById('imun-nama-label').textContent = nama;
+  loadAll();
+}
+
+async function loadAll() {
+  try {
+    dataAll = await apiCall({action:'get_data', nama:curAnak});
+    imunAll = await apiCall({action:'get_imunisasi', nama:curAnak});
+  } catch(e) { console.error(e); dataAll=[]; imunAll=[]; }
+  renderHome();
+  if (curTab==='imun') renderImun();
+}
+
+function showTab(tab) {
+  curTab=tab;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>{
+    const tabs=['home','add','imun'];
+    const isActive=tabs[i]===tab;
+    const icon=b.querySelector('.tab-icon');
+    const label=b.querySelector('.tab-label');
+    if(icon){icon.classList.toggle('text-rose-500',isActive);icon.classList.toggle('text-stone-400',!isActive);}
+    if(label){label.classList.toggle('text-rose-500',isActive);label.classList.toggle('text-stone-400',!isActive);}
+  });
+  if(tab==='imun') renderImun();
+}
+
+function renderHome() {
+  // Stats
+  const latest = dataAll[0];
+  document.getElementById('stat-berat').textContent = latest ? latest.berat+'kg' : '—';
+  document.getElementById('stat-tinggi').textContent = latest ? latest.tinggi+'cm' : '—';
+  document.getElementById('stat-lk').textContent    = latest ? latest.lingkar_kepala+'cm' : '—';
+  document.getElementById('data-count').textContent  = dataAll.length ? dataAll.length+' data' : '';
+
+  // Chart
+  const sorted = [...dataAll].sort((a,b)=>new Date(a.tanggal)-new Date(b.tanggal));
+  const labels = sorted.map(d=>{const x=new Date(d.tanggal);return d.usia_bulan+'bln';});
+  const berats  = sorted.map(d=>d.berat);
+  if (chartBerat) { chartBerat.destroy(); chartBerat=null; }
+  if (sorted.length) {
+    chartBerat = new Chart(document.getElementById('chart-berat'),{
+      type:'line',
+      data:{labels,datasets:[{label:'Berat (kg)',data:berats,borderColor:'#e11d48',backgroundColor:'rgba(225,29,72,.08)',tension:.3,pointBackgroundColor:'#e11d48',pointRadius:4,fill:true}]},
+      options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{family:'DM Sans',size:11},color:'#a8a29e'}},y:{grid:{color:'#fce7f3'},ticks:{font:{family:'DM Sans',size:11},color:'#a8a29e'}}}}
+    });
+  }
+
+  // List
+  const list = document.getElementById('data-list');
+  if (!dataAll.length) {
+    list.innerHTML=`<div class="flex flex-col items-center py-10 text-stone-300"><i data-lucide="baby" class="w-10 h-10 mb-3"></i><div class="text-stone-400 text-sm">Belum ada data pengukuran</div></div>`;
+    ri();return;
+  }
+  list.innerHTML = dataAll.map(d=>{
+    const tgl = new Date(d.tanggal);
+    return`<div class="flex items-center gap-3 bg-white rounded-xl border border-rose-100 px-4 py-3 mb-2">
+      <div class="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center flex-shrink-0 text-rose-500 font-bold text-sm">${d.usia_bulan}bl</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-sm font-semibold text-stone-700">${d.berat}kg · ${d.tinggi}cm · LK${d.lingkar_kepala}cm</div>
+        <div class="text-xs text-stone-400 mt-0.5">${tgl.getDate()} ${MS[tgl.getMonth()]} ${tgl.getFullYear()}${d.catatan?' · '+esc(d.catatan):''}</div>
+      </div>
+      <button onclick="hapusData(${d.id})" class="text-stone-200 hover:text-rose-400 transition-colors">
+        <i data-lucide="trash-2" class="w-4 h-4"></i>
+      </button>
+    </div>`;
+  }).join('');
+  ri();
+}
+
+async function simpanData() {
+  const berat = parseFloat(document.getElementById('inp-berat').value)||0;
+  const tinggi= parseFloat(document.getElementById('inp-tinggi').value)||0;
+  if (!berat) { showAddToast('Masukkan berat bayi',false); return; }
+  try {
+    await apiCall({
+      action:'add_data', nama:curAnak,
+      tanggal: document.getElementById('inp-tanggal').value||tod(),
+      usia_bulan: document.getElementById('inp-usia').value||0,
+      berat, tinggi,
+      lingkar_kepala: parseFloat(document.getElementById('inp-lk').value)||0,
+      catatan: document.getElementById('inp-catatan').value
+    });
+    showAddToast('Data tersimpan');
+    ['inp-berat','inp-tinggi','inp-lk','inp-usia','inp-catatan'].forEach(id=>document.getElementById(id).value='');
+    await loadAll();
+  } catch(e) { showAddToast('Gagal: '+e.message,false); }
+}
+
+async function hapusData(id) {
+  if (!confirm('Hapus data ini?')) return;
+  await apiCall({action:'delete_data',id});
+  showToast('Data dihapus');
+  await loadAll();
+}
+
+function renderImun() {
+  const selesai = imunAll.filter(i=>i.status==='selesai').length;
+  const total   = imunAll.length || 16;
+  document.getElementById('imun-pct').textContent  = selesai+'/'+total;
+  document.getElementById('imun-bar').style.width   = Math.round(selesai/total*100)+'%';
+
+  const list = document.getElementById('imun-list');
+  list.innerHTML = imunAll.map(item=>{
+    const done = item.status==='selesai';
+    return`<div class="flex items-center gap-3 bg-white rounded-xl border border-rose-100 px-4 py-3 mb-2">
+      <button onclick="toggleImun(${item.id})"
+        class="w-6 h-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all
+        ${done?'bg-emerald-500 border-emerald-500':'border-stone-300 hover:border-rose-400'}">
+        ${done?'<i data-lucide="check" class="w-3 h-3 text-white"></i>':''}
+      </button>
+      <div class="flex-1">
+        <div class="text-sm font-medium ${done?'text-stone-400 line-through':'text-stone-700'}">${esc(item.vaksin)}</div>
+        <div class="text-xs text-stone-400 mt-0.5">${item.usia_target}${item.tanggal_realisasi?' · '+item.tanggal_realisasi:''}</div>
+      </div>
+    </div>`;
+  }).join('');
+  ri();
+}
+
+async function toggleImun(id) {
+  await apiCall({action:'toggle_imun',id});
+  imunAll = await apiCall({action:'get_imunisasi',nama:curAnak});
+  renderImun();
+}
+
+async function init() {
+  document.getElementById('inp-tanggal').value = tod();
+  lucide.createIcons();
+  await loadAll();
+}
+init();
+</script>
+</body>
+</html>
